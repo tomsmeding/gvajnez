@@ -17,7 +17,5 @@
     "url": "https://github.com/tomsmeding/gvajnez/issues"
   },
   "homepage": "https://github.com/tomsmeding/gvajnez#readme",
-  "dependencies": {
-    "minimist": "^1.1.1"
-  }
+  "dependencies": {}
 }
