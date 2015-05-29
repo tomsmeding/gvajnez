@@ -1,5 +1,8 @@
+var etc=require("./etc.js"),
+    msgtype=require("./msgtype.json");
+
 function constructMessage(type,args){
-	var len=6+args.map(function(a){return 4+a.length;}).reduce(function(a,b){return a+b;});
+	var len=6+args.map(function(a){return 4+a.length;}).reduce(function(a,b){return a+b;},0);
 	var buf=new Buffer(len);
 	buf.writeUInt32BE(len,0);
 	buf.writeUInt8(type,4);
@@ -15,43 +18,57 @@ function constructMessage(type,args){
 }
 
 function parseMessage(buf){
-	if(buf.length<4)return false;
-	
-}
-
-function sockondata(data){
-	if(typeof data=="string")data=new Buffer(data);
-	var tmp=new Buffer(buffer.length+data.length);
-	buffer.copy(tmp);
-	data.copy(tmp,buffer.length);
-	buffer=tmp;
-
-	if(buffer.length<4)return;
-	var msglen=buffer.readUInt32BE(0);
-	if(buffer.length<msglen)return;
-
-	tmp=new Buffer(msglen-4);
-	buffer.copy(tmp,0,4,msglen);
-	onmessage(tmp,[id,conn]);
-
-	tmp=buffer.slice(msglen+1);
-	buffer=tmp;
-}
-
-function onmessage(buf,from){
-	var type,args;
-	type=buf.readUInt8(0);
-	switch(type){
-		case msgtype.file:
-			break;
-		case msgtype.checkout:
-			break;
-		case msgtype.checkin:
-			break;
-		default:
-			throw Error("Unknown message type "+type+" received from peer");
+	var buflen=buf.length;
+	if(buflen<4)return false;
+	var len=buf.readUInt32BE(0);
+	if(buflen<len)return false;
+	var type=buf.readUInt8(4);
+	var numargs=buf.readUInt8(5);
+	var cursor=6;
+	var args=new Array(numargs),arglen;
+	for(var i=0;i<numargs;i++){
+		if(cursor+4>=buflen)return {type:null,args:null,len:len};
+		arglen=buf.readUInt32BE(cursor);
+		cursor+=4;
+		if(cursor+arglen>=buflen)return {type:null,args:null,len:len};
+		args[i]=new Buffer(arglen);
+		buf.copy(args[i],0,cursor,cursor+arglen);
+		cursor+=arglen;
 	}
+	return {type:type,args:args,len:len};
 }
 
-module.exports.sockondata=sockondata;
-module.exports.onmessage=onmessage;
+function makeBufferedProtocolHandler(onmessage,obj){
+	var buffer=new Buffer(0);
+	return function(data){
+		if(typeof data=="string")data=new Buffer(data);
+
+		//first append new data to buffer
+		var tmp=new Buffer(buffer.length+data.length);
+		if(buffer.length)buffer.copy(tmp);
+		data.copy(tmp,buffer.length);
+		buffer=tmp;
+
+		//try to parse it
+		var msg=parseMessage(buffer);
+
+		if(msg==false)return; //more data needed
+
+		//replace buffer with the data that's left
+		if(buffer.length-msg.len){
+			tmp=new Buffer(buffer.length-msg.len);
+			buffer.copy(tmp,0,msg.len);
+			buffer=tmp;
+		} else {
+			buffer=new Buffer(0);
+		}
+
+		//now all administration is done, we've got ourselves a message
+		if(msg.type==null)etc.throw_error("Invalid message received!");
+		onmessage(msg,obj);
+	};
+}
+
+module.exports.constructMessage=constructMessage;
+module.exports.parseMessage=parseMessage;
+module.exports.makeBufferedProtocolHandler=makeBufferedProtocolHandler;

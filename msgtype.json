@@ -1,5 +1,7 @@
 {
 	"file":0,
 	"checkout":1,
-	"checkin":2
+	"checkin":2,
+	"ping":3,
+	"pong":4
 }
