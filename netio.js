@@ -64,8 +64,8 @@ function makeBufferedProtocolHandler(onmessage,obj){
 		}
 
 		//now all administration is done, we've got ourselves a message
-		if(msg.type==null)etc.throw_error("Invalid message received!");
 		onmessage(msg,obj);
+		if(msg.type==null)throw new Error("Invalid message received!");
 	};
 }
 
