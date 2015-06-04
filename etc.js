@@ -1,6 +1,5 @@
-function throw_error(s){
-	console.log("ERROR: "+s);
-	throw new Error(s);
+function endsWith(subj,thing){
+	return subj.indexOf(thing,subj.length-thing.length)!=-1;
 }
 
-module.exports.throw_error=throw_error;
+module.exports.endsWith=endsWith;
