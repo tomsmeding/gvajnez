@@ -1,4 +1,5 @@
 var net=require("net"),
+    lockfile=require("lockfile"),
     netio=require("./netio.js"),
     fileio=require("./fileio.js"),
     etc=require("./etc.js"),
@@ -33,9 +34,33 @@ function onmessage(msg,from,messageBuffer){
 			break;
 		case msgtype.checkout:
 			console.log("checkout received!");
+			lockfile.lock(etc.checkouts_lockfile,function(err){
+				if(err)throw err;
+				var contents;
+				try {contents=fs.readFileSync(etc.checkouts_file);}
+				catch(e) {contents="";}
+				contents+=args[0]+"\n";
+				fs.writeFileSync(etc.checkouts_file,contents);
+				lockfile.unlockSync(etc.checkouts_lockfile);
+			});
 			break;
 		case msgtype.checkin:
 			console.log("checkin received!");
+			lockfile.lock(etc.checkouts_lockfile,function(err){
+				if(err)throw err;
+				var contents;
+				try {contents=fs.readFileSync(etc.checkouts_file);}
+				catch(e) {contents="";}
+				contents=contents.split("\n");
+				for(var i=0;i<contents.length;i++){
+					if(contents[i]==args[0])break;
+				}
+				if(i!=contents.length){
+					contents=contents.splice(i,1).join("\n");
+					fs.writeFileSync(etc.checkouts_file,contents);
+				}
+				lockfile.unlockSync(etc.checkouts_lockfile);
+			});
 			break;
 		case msgtype.ping:
 			//console.log("ping received!");
