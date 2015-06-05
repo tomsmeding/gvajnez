@@ -50,7 +50,9 @@ function makeBufferedProtocolHandler(onmessage,obj){
 		buffer=tmp;
 
 		//try to parse it
-		var msg=parseMessage(buffer);
+		var messageBuffer=new Buffer(buffer.length);
+		buffer.copy(messageBuffer);
+		var msg=parseMessage(messageBuffer);
 
 		if(msg==false)return; //more data needed
 
@@ -64,8 +66,8 @@ function makeBufferedProtocolHandler(onmessage,obj){
 		}
 
 		//now all administration is done, we've got ourselves a message
-		onmessage(msg,obj);
 		if(msg.type==null)throw new Error("Invalid message received!");
+		onmessage(msg,obj,messageBuffer);
 	};
 }
 

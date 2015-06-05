@@ -26,26 +26,28 @@ function onconnection(conn){
 	});
 	conn.on("data",netio.makeBufferedProtocolHandler(onmessage,[id,conn]));
 	conn.write(netio.constructMessage(msgtype.ping,[]));
-
+	setInterval(function(){
+		conn.write(netio.constructMessage(msgtype.ping,[]));
+	},60000); //each minute, send a ping
 }
 
-function onmessage(msg,from){
+function onmessage(msg,from,messageBuffer){
 	switch(msg.type){
 		case msgtype.file:
-			console.log("file received! from "+from[0]);
-			break;
 		case msgtype.checkout:
-			console.log("checkout received! from "+from[0]);
-			break;
 		case msgtype.checkin:
-			console.log("checkin received! from "+from[0]);
+			console.log((msg.type==msgtype.file?"file":msg.type==msgtype.checkout?"checkout":"checkin")+" received! from "+from[0]);
+			conns.forEach(function(c){
+				if(c[0]!=from[0])
+					c[1].write(messageBuffer);
+			});
 			break;
 		case msgtype.ping:
 			//console.log("ping received! from "+from[0]);
 			from[1].write(netio.constructMessage(msgtype.pong,[]));
 			break;
 		case msgtype.pong:
-			console.log("Connection with "+from[0]+" OK.");
+			console.log("Pong received from "+from[0]+".");
 			break;
 		default:
 			console.log("unknown message type "+msg.type+" received!");
