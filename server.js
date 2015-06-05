@@ -26,10 +26,6 @@ function onconnection(conn){
 		conns.splice(i,1);
 		clearInterval(pinginterval);
 	});
-	conn.on("error",function(err){
-		console.error("Error on client socket "+id+"!");
-		throw err;
-	});
 	conn.on("data",netio.makeBufferedProtocolHandler(onmessage,[id,conn]));
 	conn.write(netio.constructMessage(msgtype.ping,[]));
 	pinginterval=setInterval(function(){
