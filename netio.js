@@ -1,5 +1,5 @@
 var etc=require("./etc.js"),
-    msgtype=require("./msgtype.json");
+    msgtype=require("./msgtype.js");
 
 function constructMessage(type,args){
 	var len=6+args.map(function(a){return 4+a.length;}).reduce(function(a,b){return a+b;},0);

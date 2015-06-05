@@ -1,6 +1,6 @@
 var net=require("net"),
     netio=require("./netio.js"),
-    msgtype=require("./msgtype.json");
+    msgtype=require("./msgtype.js");
 
 var conns=[];
 
@@ -16,6 +16,7 @@ function serve(port){
 
 function onconnection(conn){
 	var id=uniqid();
+	var pinginterval;
 	console.log("Accepted connection (id "+id+")");
 	conns.push([id,conn]);
 	conn.on("end",function(){
@@ -23,10 +24,15 @@ function onconnection(conn){
 		for(var i=0;i<conns.length;i++)if(conns[i][0]==id)break;
 		if(i==conns.length)throw new Error();
 		conns.splice(i,1);
+		clearInterval(pinginterval);
+	});
+	conn.on("error",function(err){
+		console.error("Error on client socket "+id+"!");
+		throw err;
 	});
 	conn.on("data",netio.makeBufferedProtocolHandler(onmessage,[id,conn]));
 	conn.write(netio.constructMessage(msgtype.ping,[]));
-	setInterval(function(){
+	pinginterval=setInterval(function(){
 		conn.write(netio.constructMessage(msgtype.ping,[]));
 	},60000); //each minute, send a ping
 }
@@ -50,7 +56,7 @@ function onmessage(msg,from,messageBuffer){
 			console.log("Pong received from "+from[0]+".");
 			break;
 		default:
-			console.log("unknown message type "+msg.type+" received!");
+			console.error("unknown message type "+msg.type+" received!");
 			break;
 	}
 }

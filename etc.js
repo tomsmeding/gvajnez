@@ -3,3 +3,4 @@ function endsWith(subj,thing){
 }
 
 module.exports.endsWith=endsWith;
+module.exports.client_editsock=".__.gvajnez.socket";

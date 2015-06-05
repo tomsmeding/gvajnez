@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+"use strict";
+
 var url=require("url");
 
 //eval("gvajnez".split("").map(function(c){return c.charCodeAt(0);}).join("*"))%65536
