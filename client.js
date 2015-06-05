@@ -4,7 +4,7 @@ var net=require("net"),
     etc=require("./etc.js"),
     msgtype=require("./msgtype.json");
 
-var conn;
+var conn,checkedout=[];
 
 var uniqid=(function(){
 	var id=0;
@@ -26,6 +26,7 @@ function onconnection(){
 }
 
 function onmessage(msg,from,messageBuffer){
+	var fname,idx;
 	switch(msg.type){
 		case msgtype.file:
 			console.log("file received!");
@@ -33,9 +34,15 @@ function onmessage(msg,from,messageBuffer){
 			break;
 		case msgtype.checkout:
 			console.log("checkout received!");
+			fname=String(args[0]);
+			if(checkedout.indexOf(fname)==-1)checkedout.push(args[0]);
 			break;
 		case msgtype.checkin:
 			console.log("checkin received!");
+			fname=String(args[0]);
+			idx=checkedout.indexOf(fname);
+			if(idx!=-1)checkedout.splice(idx,1);
+			else console.warn("Warning: someone checked in a file that wasn't checked out here. Sync issues?");
 			break;
 		case msgtype.ping:
 			//console.log("ping received!");
