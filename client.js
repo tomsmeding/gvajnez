@@ -7,11 +7,6 @@ var net=require("net"),
 
 var servconn,checkedout=[];
 
-var uniqid=(function(){
-	var id=0;
-	return function(){return id++;};
-})();
-
 function connect(url){
 	console.log("Connecting to url "+url);
 	servconn=net.createConnection(url.split(":")[1],url.split(":")[0],onconnection);
