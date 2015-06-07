@@ -39,7 +39,7 @@ function onmessage(msg,from,messageBuffer){
 		case msgtype.filedelete:
 		case msgtype.checkout:
 		case msgtype.checkin:
-			console.log((msg.type==msgtype.file?"file":msg.type==msgtype.filedelete?"filedelete":msg.type==msgtype.checkout?"checkout":msg.type==msgtype.checking?"checkin":"UNKNOWN MESSAGE")+" received! from "+from[0]);
+			console.log((msg.type==msgtype.file?"file":msg.type==msgtype.filedelete?"filedelete":msg.type==msgtype.checkout?"checkout":msg.type==msgtype.checkin?"checkin":"UNKNOWN MESSAGE")+" received! from "+from[0]);
 			conns.forEach(function(c){
 				if(c[0]!=from[0])
 					c[1].write(messageBuffer);
