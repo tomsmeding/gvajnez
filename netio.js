@@ -10,6 +10,7 @@ function constructMessage(type,args){
 	buf.writeUInt8(args.length,5);
 	var cursor=6;
 	for(var i=0;i<args.length;i++){
+		if(!(args[i] instanceof Buffer))args[i]=new Buffer(""+args[i]);
 		buf.writeUInt32BE(args[i].length,cursor);
 		cursor+=4;
 		args[i].copy(buf,cursor);
