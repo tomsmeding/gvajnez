@@ -1,11 +1,12 @@
 var net=require("net"),
     fs=require("fs"),
+    path=require("path"),
     netio=require("./netio.js"),
     fileio=require("./fileio.js"),
     etc=require("./etc.js"),
     msgtype=require("./msgtype.js");
 
-var servconn,checkedout=[];
+var servconn=null,checkedout=[];
 
 function connect(url){
 	console.log("Connecting to url "+url);
@@ -23,23 +24,38 @@ function onconnection(){
 	setInterval(function(){
 		servconn.write(netio.constructMessage(msgtype.ping,[]));
 	},60000); //each minute, send a ping
+
+	fileio.attachWatcher(function(changes){
+		console.log("changes:",changes);
+		changes.forEach(function(ch){
+			if(fs.existsSync(ch.name)){
+				servconn.write(netio.constructMessage(msgtype.file,[new Buffer(path.relative(".",ch.name)),new Buffer(ch.mode.toString()),fs.readFileSync(ch.name)]));
+			} else {
+				servconn.write(netio.constructMessage(msgtype.filedelete,[path.relative(".",ch.name)]));
+			}
+		});
+	});
 }
 
 function onmessage(msg,from,messageBuffer){
 	var fname,idx;
 	switch(msg.type){
 		case msgtype.file:
-			console.log("file received!");
+			console.log("Updating file '"+String(msg.args[0])+"'");
 			fileio.updateFile(String(msg.args[0]),parseInt(msg.args[1]),msg.args[2]);
 			break;
+		case msgtype.filedelete:
+			console.log("Updating file '"+String(msg.args[0])+"'");
+			fileio.deleteFile(String(msg.args[0]));
+			break;
 		case msgtype.checkout:
-			console.log("checkout received!");
+			console.log("Checking out file '"+String(msg.args[0])+"'");
 			fname=String(msg.args[0]);
-			if(checkedout.indexOf(fname)==-1)checkedout.push(msg.args[0]);
+			if(checkedout.indexOf(fname)==-1)checkedout.push(fname);
 			else console.warn("Warning: someone checked out a file that you already checked out. Sync issues?");
 			break;
 		case msgtype.checkin:
-			console.log("checkin received!");
+			console.log("Checking out file '"+String(msg.args[0])+"'");
 			fname=String(msg.args[0]);
 			idx=checkedout.indexOf(fname);
 			if(idx!=-1)checkedout.splice(idx,1);
@@ -110,12 +126,6 @@ function edit_onmessage(msg,conn,messageBuffer){
 			break;
 	}
 }
-
-
-
-fileio.attachWatcher(function(changes){
-	console.log(changes);
-});
 
 
 

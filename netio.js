@@ -4,6 +4,7 @@ var etc=require("./etc.js"),
 function constructMessage(type,args){
 	var len=6+args.map(function(a){return 4+a.length;}).reduce(function(a,b){return a+b;},0);
 	var buf=new Buffer(len);
+	//console.log("constructing message with len",len)
 	buf.writeUInt32BE(len,0);
 	buf.writeUInt8(type,4);
 	buf.writeUInt8(args.length,5);
@@ -14,6 +15,7 @@ function constructMessage(type,args){
 		args[i].copy(buf,cursor);
 		cursor+=args[i].length;
 	}
+	//console.log("constructing message with len",len,"result:",buf);
 	return buf;
 }
 
@@ -22,15 +24,18 @@ function parseMessage(buf){
 	if(buflen<4)return false;
 	var len=buf.readUInt32BE(0);
 	if(buflen<len)return false;
+	console.log(buf.slice(0,len));
 	var type=buf.readUInt8(4);
 	var numargs=buf.readUInt8(5);
 	var cursor=6;
 	var args=new Array(numargs),arglen;
 	for(var i=0;i<numargs;i++){
-		if(cursor+4>=buflen)return {type:null,args:null,len:len};
+		//console.log("pM: i="+i);
+		if(cursor+4>len)return {type:null,args:null,len:len};
 		arglen=buf.readUInt32BE(cursor);
 		cursor+=4;
-		if(cursor+arglen>=buflen)return {type:null,args:null,len:len};
+		//console.log("pM: cursor="+cursor);
+		if(cursor+arglen>len)return {type:null,args:null,len:len};
 		args[i]=new Buffer(arglen);
 		buf.copy(args[i],0,cursor,cursor+arglen);
 		cursor+=arglen;
@@ -42,32 +47,41 @@ function makeBufferedProtocolHandler(onmessage,obj){
 	var buffer=new Buffer(0);
 	return function(data){
 		if(typeof data=="string")data=new Buffer(data);
+		//console.log("received",data);
 
 		//first append new data to buffer
 		var tmp=new Buffer(buffer.length+data.length);
 		if(buffer.length)buffer.copy(tmp);
 		data.copy(tmp,buffer.length);
 		buffer=tmp;
+		//console.log("buffer+data",buffer);
 
-		//try to parse it
-		var messageBuffer=new Buffer(buffer.length);
-		buffer.copy(messageBuffer);
-		var msg=parseMessage(messageBuffer);
+		//then while there's a message in there
+		do {
+			//try to parse it
+			var messageBuffer=new Buffer(buffer.length);
+			buffer.copy(messageBuffer);
+			var msg=parseMessage(messageBuffer);
 
-		if(msg==false)return; //more data needed
+			if(msg==false)return; //more data needed
 
-		//replace buffer with the data that's left
-		if(buffer.length-msg.len){
-			tmp=new Buffer(buffer.length-msg.len);
-			buffer.copy(tmp,0,msg.len);
-			buffer=tmp;
-		} else {
-			buffer=new Buffer(0);
-		}
+			//console.log("messageBuffer",messageBuffer);
+			//console.log("msg.len",msg.len);
 
-		//now all administration is done, we've got ourselves a message
-		if(msg.type==null)throw new Error("Invalid message received!");
-		onmessage(msg,obj,messageBuffer);
+			//replace buffer with the data that's left
+			if(buffer.length-msg.len>0){
+				tmp=new Buffer(buffer.length-msg.len);
+				buffer.copy(tmp,0,msg.len);
+				buffer=tmp;
+			} else {
+				buffer=new Buffer(0);
+			}
+			//console.log("buffer",buffer);
+
+			//now all administration is done, we've got ourselves a message
+			if(msg.type==null)throw new Error("Invalid message received!");
+			onmessage(msg,obj,messageBuffer);
+		} while(buffer.length);
 	};
 }
 

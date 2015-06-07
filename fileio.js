@@ -4,11 +4,17 @@ var fs=require("fs"),
 
 var directory=process.cwd();
 var currentState=[];
-var ignored=[etc.client_editsock,".DS_Store"];
+var ignored=[etc.client_editsock,".DS_Store",".git"];
+var justUpdated=[];
 
 
 function updateFile(fname,mode,buf){
 	fs.writeFileSync(fname,buf,{mode:mode});
+	justUpdated.push(path.resolve(fname));
+}
+function deleteFile(fname){
+	fs.unlinkSync(fname);
+	justUpdated.push(path.resolve(fname));
 }
 
 
@@ -17,8 +23,14 @@ function collectDirState(dir){
 	console.log("collectDirState("+dir+")");
 	var list=fs.readdirSync(dir);
 	var result=[];
-	var statinfo,i,j;
+	var statinfo,i,j,idx;
+	console.log("justUpdated =",justUpdated);
 	for(i=0;i<list.length;i++){
+		idx=justUpdated.indexOf(path.resolve(dir+"/"+list[i]));
+		if(idx!=-1){
+			justUpdated.splice(idx,1);
+			continue;
+		}
 		for(j=0;j<ignored.length;j++){
 			if(etc.endsWith(path.normalize(dir+"/"+list[i]),"/"+ignored[j]))break;
 		}
@@ -84,14 +96,19 @@ function _attachWatcher(timeout,dir,callback){
 			currentState=newstate;
 			if(changes.length!=0)callback(changes);
 			timeout._=null;
-			console.log(currentState);
+			//console.log(currentState);
 		},500);
 	});
 	var list=fs.readdirSync(dir);
-	var i;
-	for(i=0;i<list.length;i++)
-		if(fs.statSync(dir+"/"+list[i]).isDirectory())
-			_attachWatcher(timeout,dir+"/"+list[i],callback);
+	var i,j;
+	for(i=0;i<list.length;i++){
+		if(fs.statSync(dir+"/"+list[i]).isDirectory()){
+			for(j=0;j<ignored.length;j++){
+				if(etc.endsWith(path.normalize(dir+"/"+list[i]),"/"+ignored[j]))break;
+			}
+			if(j==ignored.length)_attachWatcher(timeout,dir+"/"+list[i],callback);
+		}
+	}
 }
 
 function ignoreFiles(fnames){
@@ -100,5 +117,6 @@ function ignoreFiles(fnames){
 
 
 module.exports.updateFile=updateFile;
+module.exports.deleteFile=deleteFile;
 module.exports.attachWatcher=attachWatcher;
 module.exports.ignoreFiles=ignoreFiles;
