@@ -40,7 +40,7 @@ function onmessage(msg,from,messageBuffer){
 			if(editor)editor=editor.split(" ");
 			else editor=["vim"];
 			console.log("Using editor '"+editor+"'");
-			proc=spawn(editor[0],editor.slice(1).concat([path.resolve(fname)]));
+			proc=spawn(editor[0],editor.slice(1).concat([path.resolve(fname)]),{stdio:"inherit"});
 			proc.on("close",function(code){
 				if(code!=0){
 					console.log("'"+editor+"' exited with code "+code+"!");
