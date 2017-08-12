@@ -57,7 +57,7 @@ function onmessage(msg,from,messageBuffer){
 		case msgtype.checkin:
 			console.log("Checking out file '"+String(msg.args[0])+"'");
 			fname=String(msg.args[0]);
-			idx=checkedout.indexOf(fname);
+			idx=checkedout.indexOf(path.resolve(fname));
 			if(idx!=-1)checkedout.splice(idx,1);
 			else console.warn("Warning: someone checked in a file that wasn't checked out here. Sync issues?");
 			break;

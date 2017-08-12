@@ -1,10 +1,10 @@
 module.exports={
-	"file":0, // fname, mode, contents
-	"filedelete":1, // fname
-	"checkout":2, // fname
-	"checkin":3, // fname
-	"ping":4, // -
-	"pong":5, // -
+	"file":1, // fname, mode, contents
+	"filedelete":2, // fname
+	"checkout":3, // fname
+	"checkin":4, // fname
+	"ping":5, // -
+	"pong":6, // -
 
 	"edit":{
 		"open":100, // fname
